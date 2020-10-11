@@ -8,6 +8,6 @@ namespace WebAPIExercise.Data.Models
         public int Id { get; set; }
         public DateTime Date { get; set; }
         public string CompanyCode { get; set; }
-        public IEnumerable<OrderItem> OrderItems {get; set;}
+        public ICollection<OrderItem> OrderItems {get; set;}
     }
 }

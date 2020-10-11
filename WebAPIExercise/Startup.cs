@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using WebAPIExercise.Data;
+using WebAPIExercise.Mapping;
 using WebAPIExercise.Services;
 
 namespace WebAPIExercise
@@ -24,6 +25,8 @@ namespace WebAPIExercise
         {
             services.AddControllers();
             services.AddDbContext<ShopContext>(opts => opts.UseSqlite(@"Data Source=Shop.db;"));
+
+            services.AddSingleton<ICompanyTotalConverter, DictionaryCompanyTotalConverter>();
 
             services.AddAutoMapper(typeof(Startup).Assembly);
 

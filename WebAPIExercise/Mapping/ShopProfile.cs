@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Linq;
 
 using InOrder = WebAPIExercise.Input.Order;
 using InProduct = WebAPIExercise.Input.Product;
@@ -17,13 +18,21 @@ namespace WebAPIExercise.Mapping
 {
     public class ShopProfile : Profile
     {
-        public ShopProfile()
+        //Filthy workaround
+        public ShopProfile() : this(new DictionaryCompanyTotalConverter()) {}
+
+        public ShopProfile(ICompanyTotalConverter converter)
         {
             CreateMap<InOrder, DbOrder>();
             CreateMap<InOrderItem, DbOrderItem>();
             CreateMap<InProduct, DbProduct>();
 
-            CreateMap<DbOrder, OutOrder>();
+            CreateMap<DbOrder, OutOrder>()
+                .ForMember(
+                    outputOrder => outputOrder.Total, 
+                    mapping => mapping.MapFrom(
+                        dbOrder => converter.ComputeTotalFor(dbOrder.CompanyCode, dbOrder.OrderItems.Sum(item => item.OrderedQuantity * item.Product.UnitPrice))
+                ));
             CreateMap<DbOrderItem, OutOrderItem>();
             CreateMap<DbProduct, OutProduct>();
         }

@@ -7,7 +7,6 @@ namespace WebAPIExercise.Data.Models
         public int Id { get; set; }
         [ForeignKey("OrderId")]
         public Order Order { get; set; }
-
         [ForeignKey("ProductId")]
         public Product Product { get; set; }
         public int OrderedQuantity { get; set; }
