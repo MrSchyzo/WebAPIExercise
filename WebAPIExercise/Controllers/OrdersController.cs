@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -26,8 +27,8 @@ namespace WebAPIExercise.Controllers
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<IEnumerable<OrderSummary>> Get(
-            [FromQuery(Name = "startPage")] int? startPage,
+        public async Task<ActionResult<IEnumerable<OrderSummary>>> Get(
+            [FromQuery(Name = "pageStart")] int? startPage,
             [FromQuery(Name = "pageSize")] int? pageSize
         )
         {
@@ -48,7 +49,7 @@ namespace WebAPIExercise.Controllers
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Order> Get(int id)
+        public async Task<ActionResult<Order>> Get(int id)
         {
             if (id % 2 != 0) return NotFound();
 
@@ -59,7 +60,7 @@ namespace WebAPIExercise.Controllers
                     CompanyCode = $"COMPANY_{id % 2}",
                     Date = DateTime.Now.AddDays(-id),
                     Total = id * 1.2 + 750 * (Math.Sin(id) + 1),
-                    Items = Enumerable.Range(0, id % 10).Select(j => new ProductItem
+                    Items = Enumerable.Range(0, id % 10).Select(j => new OrderItem
                     {
                         Id = j,
                         OrderedQuantity = (int)(10 * (Math.Sin(j) + 1)) + 1,
@@ -73,7 +74,7 @@ namespace WebAPIExercise.Controllers
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<OrderSummary> New(InOrder toInsert)
+        public async Task<ActionResult<OrderSummary>> New(InOrder toInsert)
         {
             return Ok(
                 new OrderSummary

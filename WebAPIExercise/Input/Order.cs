@@ -9,6 +9,6 @@ namespace WebAPIExercise.Input
         public string CompanyCode { get; set; }
         [Required]
         [MinLength(1)]
-        public IEnumerable<ProductItem> Items { get; set; }
+        public IEnumerable<OrderItem> Items { get; set; }
     }
 }

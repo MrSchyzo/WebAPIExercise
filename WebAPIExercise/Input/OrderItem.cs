@@ -1,6 +1,6 @@
 ﻿namespace WebAPIExercise.Input
 {
-    public class ProductItem
+    public class OrderItem
     {
         public int Id { get; set; }
         public int OrderedQuantity { get; set; }

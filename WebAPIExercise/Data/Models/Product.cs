@@ -1,4 +1,6 @@
-﻿namespace WebAPIExercise.Entities
+﻿using System.Collections;
+
+namespace WebAPIExercise.Data.Models
 {
     public class Product
     {

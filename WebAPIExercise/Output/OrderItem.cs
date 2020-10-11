@@ -1,6 +1,6 @@
 ﻿namespace WebAPIExercise.Output
 {
-    public class ProductItem
+    public class OrderItem
     {
         public int Id { get; set; }
         public double UnitPrice { get; set; }

@@ -1,14 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using WebAPIExercise.Data;
+using WebAPIExercise.Services;
 
 namespace WebAPIExercise
 {
@@ -25,6 +23,12 @@ namespace WebAPIExercise
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddDbContext<ShopContext>(opts => opts.UseSqlite(@"Data Source=Shop.db;"));
+
+            services.AddAutoMapper(typeof(Startup).Assembly);
+
+            services.AddScoped<IProductService, ShopProductService>();
+            services.AddScoped<IOrderService, ShopOrderService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

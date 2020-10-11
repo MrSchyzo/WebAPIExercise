@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 using WebAPIExercise.Output;
+using WebAPIExercise.Services;
 using InProduct = WebAPIExercise.Input.Product;
 
 namespace WebAPIExercise.Controllers
@@ -16,32 +18,27 @@ namespace WebAPIExercise.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly ILogger<ProductsController> _logger;
+        private readonly IProductService service;
 
-        public ProductsController(ILogger<ProductsController> logger)
+        public ProductsController(ILogger<ProductsController> logger, IProductService service)
         {
             _logger = logger;
+            this.service = service;
         }
 
         [HttpGet]
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<IEnumerable<Product>> Get(
-            [FromQuery(Name = "startPage")] int? startPage,
+        public async Task<ActionResult<IEnumerable<Product>>> Get(
+            [FromQuery(Name = "pageStart")] int? startPage,
             [FromQuery(Name = "pageSize")] int? pageSize
         )
         {
             int start = Math.Max(0, startPage ?? 0);
             int size = Math.Clamp(pageSize ?? 100, 1, 100);
 
-            return Ok(Enumerable.Range(1, int.MaxValue).Skip(start * size).Take(size).Select(i => new Product
-            {
-                Id = i,
-                Name = $"Product {i}",
-                Description = $"This is the product number {i}",
-                StockQuantity = (int)((Math.Sin(i) + 1) * 10000),
-                UnitPrice = (Math.Cos(i * Math.Sin(i * 300)) + 1) * 100
-            }));
+            return Ok(await service.GetAllPagedAsync(start, size));
         }
 
         [HttpGet]
@@ -49,40 +46,18 @@ namespace WebAPIExercise.Controllers
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Product> Get(int id)
+        public async Task<ActionResult<Product>> Get(int id)
         {
-            if (id % 2 != 0) return NotFound();
-
-            return Ok(
-                new Product
-                {
-                    Id = id,
-                    Name = $"Product {id}",
-                    Description = $"This is the product number {id}",
-                    StockQuantity = (int)((Math.Sin(id) + 1) * 10000),
-                    UnitPrice = (Math.Cos(id * Math.Sin(id * 300)) + 1) * 100
-                }
-            );
+            return Ok(await service.GetByIdAsync(id));
         }
 
         [HttpPost]
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<Product> New(InProduct toInsert)
+        public async Task<Product> New(InProduct toInsert)
         {
-            if (toInsert.Name == "E") return BadRequest("Name and Description already exist");
-
-            return Ok(
-                new Product
-                {
-                    Id = (int) (DateTime.Now.Ticks % 1_000_000L),
-                    Name = toInsert.Name,
-                    Description = toInsert.Description,
-                    StockQuantity = toInsert.StockQuantity,
-                    UnitPrice = toInsert.StockQuantity
-                }
-            );
+            return await service.NewAsync(toInsert);
         }
     }
 }
