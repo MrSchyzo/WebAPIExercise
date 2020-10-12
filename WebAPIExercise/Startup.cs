@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using WebAPIExercise.Data;
+using WebAPIExercise.Data.UnitOfWork;
 using WebAPIExercise.Mapping;
 using WebAPIExercise.Services;
 
@@ -32,6 +33,10 @@ namespace WebAPIExercise
 
             services.AddScoped<IProductService, ShopProductService>();
             services.AddScoped<IOrderService, ShopOrderService>();
+
+            services.AddScoped<IProductRepository, ShopProductRepository>();
+            services.AddScoped<IOrderRepository, ShopOrderRepository>();
+            services.AddScoped<ShopUnitOfWork>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

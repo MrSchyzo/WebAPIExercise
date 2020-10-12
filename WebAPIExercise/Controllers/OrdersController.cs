@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-
 using WebAPIExercise.Output;
 using WebAPIExercise.Services;
 using InOrder = WebAPIExercise.Input.Order;
+using InOrderItem = WebAPIExercise.Input.OrderItem;
 
 namespace WebAPIExercise.Controllers
 {

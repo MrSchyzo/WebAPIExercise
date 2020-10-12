@@ -1,12 +1,13 @@
-﻿using WebAPIExercise.Data;
-using AutoMapper;
+﻿using AutoMapper;
 using System;
 using System.Linq;
 using System.Collections.Immutable;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using WebAPIExercise.Output;
+using WebAPIExercise.Data.UnitOfWork;
+using Functional.Maybe;
+using WebAPIExercise.Utils;
 
 using InOrder = WebAPIExercise.Input.Order;
 using DbOrder = WebAPIExercise.Data.Models.Order;
@@ -17,67 +18,71 @@ namespace WebAPIExercise.Services
 {
     public class ShopOrderService : IOrderService
     {
-        private readonly ShopContext shop;
+        private readonly ShopUnitOfWork unit;
         private readonly IMapper mapper;
 
-        public ShopOrderService(ShopContext shop, IMapper mapper)
+        public ShopOrderService(ShopUnitOfWork unit, IMapper mapper)
         {
-            this.shop = shop;
+            this.unit = unit;
             this.mapper = mapper;
         }
 
         public async Task<IEnumerable<Order>> GetAllPagedAsync(int pageStart, int pageSize)
         {
-            IEnumerable<DbOrder> products = await shop.Orders.Skip(pageStart * pageSize).Take(pageSize).ToListAsync();
+            IEnumerable<DbOrder> orders = await unit.ExecuteAsync(async (_, orders) => await orders.GetPage(pageStart, pageSize));
 
-            return products.Select(mapper.Map<Order>);
+            return orders.Select(mapper.Map<Order>);
         }
 
         public async Task<Order> GetByIdAsync(int id)
         {
-            DbOrder found = await shop.Orders.Where(order => order.Id == id).FirstAsync();
+            Maybe<DbOrder> maybe = await unit.ExecuteAsync(async (_, order) => await order.GetById(id));
 
-            return mapper.Map<Order>(found);
+            return maybe
+                    .Select(mapper.Map<Order>)
+                    .OrElseThrow(() => new Exception($"Order {id} not found"));
         }
 
         public async Task<Order> NewAsync(InOrder order)
         {
             ImmutableHashSet<int> productIds = order.Items.Select(item => item.ProductId).ToImmutableHashSet();
 
-            using (var transaction = await shop.Database.BeginTransactionAsync())
+            if (productIds.Count != order.Items.Count())
             {
-                IDictionary<int, DbProduct> products = await shop.Products.Where(prod => productIds.Contains(prod.Id)).ToDictionaryAsync(prod => prod.Id);
-                DbOrder newOrder = (await shop.Orders.AddAsync(OrderFrom(order, products))).Entity;
+                throw new Exception("There is some duplicated product entry in current order, please merge for unique productId entries");
+            }
 
-                await foreach (var o in shop.Orders.Where(o => o.CompanyCode == order.CompanyCode).AsAsyncEnumerable())
+            DbOrder newOrder = await unit.ExecuteAsync(async (prodRepo, orderRepo) =>
+            {
+                IDictionary<int, DbProduct> products = await prodRepo.GetByIdIn(productIds);
+
+                DbOrder toInsert = OrderFrom(order, products);
+
+                if (!productIds.All(products.ContainsKey))
                 {
-                    if ((DateTime.Now - o.Date).Days != 0) continue;
-                    await transaction.RollbackAsync();
-                    throw new Exception("Cannot accept another order from the same company on the same day");
+                    throw new Exception("Cannot accept an order with invalid product ids");
                 }
-
+                if (await orderRepo.HasCompanyOrdersForToday(toInsert))
+                {
+                    throw new Exception($"There is already an order for company {order.CompanyCode}, today");
+                }
                 if (order.Items.Sum(item => products[item.ProductId].UnitPrice * item.OrderedQuantity) < 100.0)
                 {
-                    await transaction.RollbackAsync();
                     throw new Exception("Cannot accept orders for less than 100.0");
                 }
-
                 if (order.Items.Any(item => products[item.ProductId].StockQuantity < item.OrderedQuantity))
                 {
-                    await transaction.RollbackAsync();
                     throw new Exception("Cannot accept order as there is some shortage in the ordered products");
                 }
 
-                foreach (var item in order.Items)
-                {
-                    products[item.ProductId].StockQuantity -= item.OrderedQuantity;
-                }
+                DbOrder saved = await orderRepo.NewOrder(toInsert);
 
-                await shop.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await Task.WhenAll(order.Items.Select(item => prodRepo.DecrementStockBy(products[item.ProductId], item.OrderedQuantity)).ToArray());
 
-                return mapper.Map<Order>(newOrder);
-            }
+                return saved;
+            });
+
+            return mapper.Map<Order>(newOrder);
         }
 
         private static DbOrder OrderFrom(InOrder order, IDictionary<int, DbProduct> products)

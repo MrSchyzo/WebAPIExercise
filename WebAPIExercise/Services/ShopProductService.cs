@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using WebAPIExercise.Data;
 using WebAPIExercise.Output;
+using WebAPIExercise.Data.UnitOfWork;
+using Functional.Maybe;
+using WebAPIExercise.Utils;
+using System;
 
 using InProduct = WebAPIExercise.Input.Product;
 using DbProduct = WebAPIExercise.Data.Models.Product;
@@ -13,39 +15,42 @@ namespace WebAPIExercise.Services
 {
     public class ShopProductService : IProductService
     {
-        private readonly ShopContext shop;
+        private readonly ShopUnitOfWork unit;
         private readonly IMapper mapper;
 
-        public ShopProductService(ShopContext shop, IMapper mapper)
+        public ShopProductService(ShopUnitOfWork unit, IMapper mapper)
         {
-            this.shop = shop;
+            this.unit = unit;
             this.mapper = mapper;
         }
 
         public async Task<IEnumerable<Product>> GetAllPagedAsync(int pageStart, int pageSize)
         {
-            IEnumerable<DbProduct> products = await shop.Products.Skip(pageStart * pageSize).Take(pageSize).ToListAsync();
+            IEnumerable<DbProduct> products = await unit.ExecuteAsync(async (products, _) => await products.GetPage(pageStart, pageSize));
 
             return products.Select(mapper.Map<Product>);
         }
 
         public async Task<Product> GetByIdAsync(int id)
         {
-            DbProduct found = await shop.Products.Where(product => product.Id == id).FirstAsync();
+            Maybe<DbProduct> maybe = await unit.ExecuteAsync(async (products, _) => await products.GetById(id));
 
-            return mapper.Map<Product>(found);
+            return maybe
+                    .Select(mapper.Map<Product>)
+                    .OrElseThrow(() => new Exception($"Product {id} not found"));
         }
 
         public async Task<Product> NewAsync(InProduct product)
         {
-            if (await shop.Products.Where(dbProd => product.Description == dbProd.Description && product.Name == dbProd.Name).AnyAsync())
+            DbProduct newProduct = await unit.ExecuteAsync(async (products, _) =>
             {
-                throw new System.Exception("Product name and description already exist");
-            }
-
-            DbProduct newProduct = (await shop.Products.AddAsync(mapper.Map<DbProduct>(product))).Entity;
-
-            await shop.SaveChangesAsync();
+                DbProduct toInsert = mapper.Map<DbProduct>(product);
+                if (await products.IsThereAnyCollisionsWith(toInsert))
+                {
+                    throw new Exception("A product with same name and description already exists");
+                }
+                return await products.NewProduct(toInsert);
+            });
 
             return mapper.Map<Product>(newProduct);
         }
