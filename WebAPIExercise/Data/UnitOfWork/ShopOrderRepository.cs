@@ -19,12 +19,24 @@ namespace WebAPIExercise.Data.UnitOfWork
 
         public async Task<Maybe<Order>> GetById(int id)
         {
-            return (await context.Orders.Where(order => order.Id == id).FirstOrDefaultAsync()).ToMaybe();
+            return (
+                await context.Orders
+                        .Include(order => order.OrderItems)
+                        .ThenInclude(item => item.Product)
+                        .Where(order => order.Id == id)
+                        .FirstOrDefaultAsync()
+            ).ToMaybe();
         }
 
         public async Task<IEnumerable<Order>> GetPage(int start, int size)
         {
-            return await context.Orders.Skip(start * size).Take(size).ToListAsync();
+            return 
+                await context.Orders
+                        .Include(order => order.OrderItems)
+                        .ThenInclude(item => item.Product)
+                        .Skip(start * size)
+                        .Take(size)
+                        .ToListAsync();
         }
 
         public async Task<bool> HasCompanyOrdersForToday(Order order)
@@ -36,6 +48,7 @@ namespace WebAPIExercise.Data.UnitOfWork
         public async Task<Order> NewOrder(Order order)
         {
             Order newOrder = (await context.Orders.AddAsync(order)).Entity;
+            await context.OrderItems.AddRangeAsync(newOrder.OrderItems);
             await context.SaveChangesAsync();
             return newOrder;
         }

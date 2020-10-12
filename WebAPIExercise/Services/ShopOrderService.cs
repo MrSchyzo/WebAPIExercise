@@ -87,18 +87,15 @@ namespace WebAPIExercise.Services
 
         private static DbOrder OrderFrom(InOrder order, IDictionary<int, DbProduct> products)
         {
-            return new DbOrder
+            DbOrder newOrder = new DbOrder
             {
                 CompanyCode = order.CompanyCode,
-                Date = DateTime.Now,
-                OrderItems = order.Items.Select(item =>
-                    new DbOrderItem
-                    {
-                        OrderedQuantity = item.OrderedQuantity,
-                        Product = products[item.ProductId]
-                    }
-                ).ToList()
+                Date = DateTime.Now
             };
+
+            newOrder.OrderItems = order.Items.Select(item => new DbOrderItem{ OrderedQuantity = item.OrderedQuantity, Product = products[item.ProductId], Order = newOrder}).ToList();
+
+            return newOrder;
         }
     }
 }

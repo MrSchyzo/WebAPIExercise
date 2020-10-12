@@ -12,7 +12,7 @@ using OutOrderItem = WebAPIExercise.Output.OrderItem;
 using DbOrder = WebAPIExercise.Data.Models.Order;
 using DbProduct = WebAPIExercise.Data.Models.Product;
 using DbOrderItem = WebAPIExercise.Data.Models.OrderItem;
-
+using System.Collections.Immutable;
 
 namespace WebAPIExercise.Mapping
 {
@@ -32,8 +32,17 @@ namespace WebAPIExercise.Mapping
                     outputOrder => outputOrder.Total, 
                     mapping => mapping.MapFrom(
                         dbOrder => converter.ComputeTotalFor(dbOrder.CompanyCode, dbOrder.OrderItems.Sum(item => item.OrderedQuantity * item.Product.UnitPrice))
+                ))
+                .ForMember(
+                    outputOrder => outputOrder.OrderedProducts,
+                    mapping => mapping.MapFrom(
+                        dbOrder => dbOrder.OrderItems.Select(item => new OutOrderItem
+                        {
+                            ProductId = item.Product.Id,
+                            OrderedQuantity = item.OrderedQuantity,
+                            UnitPrice = item.Product.UnitPrice
+                        }).ToImmutableList()
                 ));
-            CreateMap<DbOrderItem, OutOrderItem>();
             CreateMap<DbProduct, OutProduct>();
         }
     }
