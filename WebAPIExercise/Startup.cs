@@ -9,6 +9,7 @@ using WebAPIExercise.Data;
 using WebAPIExercise.Data.UnitOfWork;
 using WebAPIExercise.Mapping;
 using WebAPIExercise.Services;
+using WebAPIExercise.Utils;
 
 namespace WebAPIExercise
 {
@@ -25,7 +26,7 @@ namespace WebAPIExercise
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddDbContext<ShopContext>(opts => opts.UseSqlite(@"Data Source=Shop.db;"));
+            services.AddDbContext<ShopContext>(opts => opts.UseSqlite(Configuration.GetConnectionString("shop")));
 
             services.AddSingleton<ICompanyTotalConverter, DictionaryCompanyTotalConverter>();
 
@@ -46,6 +47,8 @@ namespace WebAPIExercise
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseExceptionHandler(a => a.Run(ExceptionRequestHandler.HandleExceptionInRequest));
 
             app.UseRouting();
 

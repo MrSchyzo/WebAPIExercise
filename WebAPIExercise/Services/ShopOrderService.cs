@@ -13,6 +13,7 @@ using InOrder = WebAPIExercise.Input.Order;
 using DbOrder = WebAPIExercise.Data.Models.Order;
 using DbOrderItem = WebAPIExercise.Data.Models.OrderItem;
 using DbProduct = WebAPIExercise.Data.Models.Product;
+using WebAPIExercise.Errors;
 
 namespace WebAPIExercise.Services
 {
@@ -40,7 +41,7 @@ namespace WebAPIExercise.Services
 
             return maybe
                     .Select(mapper.Map<Order>)
-                    .OrElseThrow(() => new Exception($"Order {id} not found"));
+                    .OrElseThrow(() => new NotFoundException($"Order {id} not found"));
         }
 
         public async Task<Order> NewAsync(InOrder order)
@@ -49,7 +50,7 @@ namespace WebAPIExercise.Services
 
             if (productIds.Count != order.Items.Count())
             {
-                throw new Exception("There is some duplicated product entry in current order, please merge for unique productId entries");
+                throw new InvalidEntityException("There is some duplicated product entry in current order, please merge for unique productId entries");
             }
 
             DbOrder newOrder = await unit.ExecuteAsync(async (prodRepo, orderRepo) =>
@@ -60,19 +61,19 @@ namespace WebAPIExercise.Services
 
                 if (!productIds.All(products.ContainsKey))
                 {
-                    throw new Exception("Cannot accept an order with invalid product ids");
+                    throw new InvalidEntityException("Cannot accept an order with invalid product ids");
                 }
                 if (await orderRepo.HasCompanyOrdersForToday(toInsert))
                 {
-                    throw new Exception($"There is already an order for company {order.CompanyCode}, today");
+                    throw new InvalidEntityException($"Today company {order.CompanyCode} has already ordered something");
                 }
                 if (order.Items.Sum(item => products[item.ProductId].UnitPrice * item.OrderedQuantity) < 100.0)
                 {
-                    throw new Exception("Cannot accept orders for less than 100.0");
+                    throw new InvalidEntityException("Cannot accept orders for less than 100.0");
                 }
                 if (order.Items.Any(item => products[item.ProductId].StockQuantity < item.OrderedQuantity))
                 {
-                    throw new Exception("Cannot accept order as there is some shortage in the ordered products");
+                    throw new InvalidEntityException("Cannot accept order as there is some shortage in the ordered products");
                 }
 
                 DbOrder saved = await orderRepo.NewOrder(toInsert);

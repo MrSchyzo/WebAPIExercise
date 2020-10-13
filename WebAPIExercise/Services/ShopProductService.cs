@@ -6,10 +6,10 @@ using WebAPIExercise.Output;
 using WebAPIExercise.Data.UnitOfWork;
 using Functional.Maybe;
 using WebAPIExercise.Utils;
-using System;
 
 using InProduct = WebAPIExercise.Input.Product;
 using DbProduct = WebAPIExercise.Data.Models.Product;
+using WebAPIExercise.Errors;
 
 namespace WebAPIExercise.Services
 {
@@ -37,7 +37,7 @@ namespace WebAPIExercise.Services
 
             return maybe
                     .Select(mapper.Map<Product>)
-                    .OrElseThrow(() => new Exception($"Product {id} not found"));
+                    .OrElseThrow(() => new NotFoundException($"Product {id} not found"));
         }
 
         public async Task<Product> NewAsync(InProduct product)
@@ -47,7 +47,7 @@ namespace WebAPIExercise.Services
                 DbProduct toInsert = mapper.Map<DbProduct>(product);
                 if (await products.IsThereAnyCollisionsWith(toInsert))
                 {
-                    throw new Exception("A product with same name and description already exists");
+                    throw new InvalidEntityException("A product with same name and description already exists");
                 }
                 return await products.NewProduct(toInsert);
             });
