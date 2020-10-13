@@ -13,6 +13,10 @@ using WebAPIExercise.Errors;
 
 namespace WebAPIExercise.Services
 {
+    /// <summary>
+    /// <inheritdoc cref="IProductService"/>
+    /// <para>It uses a single DB UnitOfWork</para>
+    /// </summary>
     public class ShopProductService : IProductService
     {
         private readonly ShopUnitOfWork unit;
@@ -24,6 +28,13 @@ namespace WebAPIExercise.Services
             this.mapper = mapper;
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IProductService.GetAllPagedAsync(int, int)"/>
+        /// <para>It does not check argument validity.</para>
+        /// </summary>
+        /// <param name="pageStart">0-based index of the page</param>
+        /// <param name="pageSize">Size of the page</param>
+        /// <returns>All Products in a chosen page</returns>
         public async Task<IEnumerable<Product>> GetAllPagedAsync(int pageStart, int pageSize)
         {
             IEnumerable<DbProduct> products = await unit.ExecuteAsync(async (products, _) => await products.GetPage(pageStart, pageSize));
@@ -31,6 +42,12 @@ namespace WebAPIExercise.Services
             return products.Select(mapper.Map<Product>);
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IProductService.GetByIdAsync(int)"/>
+        /// <para>It throws NotFoundException if the Product is not found</para>
+        /// </summary>
+        /// <param name="id">Product identifier</param>
+        /// <returns>A Product by id</returns>
         public async Task<Product> GetByIdAsync(int id)
         {
             Maybe<DbProduct> maybe = await unit.ExecuteAsync(async (products, _) => await products.GetById(id));
@@ -40,12 +57,18 @@ namespace WebAPIExercise.Services
                     .OrElseThrow(() => new NotFoundException($"Product {id} not found"));
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IProductService.NewAsync(InOrder)"/>
+        /// If there is already a Product that has same name and same description, an InvalidEntityException is thrown.
+        /// </summary>
+        /// <param name="product">POCO representing the Product to save</param>
+        /// <returns>POCO representing the output Product</returns>
         public async Task<Product> NewAsync(InProduct product)
         {
             DbProduct newProduct = await unit.ExecuteAsync(async (products, _) =>
             {
                 DbProduct toInsert = mapper.Map<DbProduct>(product);
-                if (await products.IsThereAnyCollisionsWith(toInsert))
+                if (await products.IsThereAnyCollisionWith(toInsert))
                 {
                     throw new InvalidEntityException("A product with same name and description already exists");
                 }

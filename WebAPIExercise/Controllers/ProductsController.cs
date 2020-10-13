@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +12,9 @@ using InProduct = WebAPIExercise.Input.Product;
 
 namespace WebAPIExercise.Controllers
 {
+    /// <summary>
+    /// Products API controller
+    /// </summary>
     [ApiController]
     [Route("[controller]")]
     public class ProductsController : ControllerBase
@@ -26,6 +28,12 @@ namespace WebAPIExercise.Controllers
             this.service = service;
         }
 
+        /// <summary>
+        /// GET /products?pageStart=x&pageSize=y
+        /// </summary>
+        /// <param name="pageStart">0-based index of the page, defaults to 0</param>
+        /// <param name="pageSize">Page size, defaults to 100, between 1 and 100</param>
+        /// <returns>An ActionResult containing the Products</returns>
         [HttpGet]
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -41,6 +49,11 @@ namespace WebAPIExercise.Controllers
             return Ok(await service.GetAllPagedAsync(start, size));
         }
 
+        /// <summary>
+        /// GET /products/ID
+        /// </summary>
+        /// <param name="id">Product ID</param>
+        /// <returns>An ActionResult containing the Product</returns>
         [HttpGet]
         [Route("{id:int:min(1)}")]
         [Produces(MediaTypeNames.Application.Json)]
@@ -51,6 +64,11 @@ namespace WebAPIExercise.Controllers
             return Ok(await service.GetByIdAsync(id));
         }
 
+        /// <summary>
+        /// POST /products
+        /// </summary>
+        /// <param name="toInsert">Product to create</param>
+        /// <returns>An ActionResult containing the newly created Product</returns>
         [HttpPost]
         [Produces(MediaTypeNames.Application.Json)]
         [ProducesResponseType(StatusCodes.Status201Created)]

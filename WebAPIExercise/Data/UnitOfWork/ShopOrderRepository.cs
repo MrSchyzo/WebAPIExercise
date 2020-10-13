@@ -8,6 +8,9 @@ using WebAPIExercise.Data.Models;
 
 namespace WebAPIExercise.Data.UnitOfWork
 {
+    /// <summary>
+    /// <inheritdoc cref="IOrderRepository"/>
+    /// </summary>
     public class ShopOrderRepository : IOrderRepository
     {
         private readonly ShopContext context;
@@ -17,6 +20,11 @@ namespace WebAPIExercise.Data.UnitOfWork
             this.context = context;
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderRepository.GetById(int)"/>
+        /// </summary>
+        /// <param name="id">Order Id</param>
+        /// <returns>A Maybe monad wrapping the value; the monad is empty if the record is not found</returns>
         public async Task<Maybe<Order>> GetById(int id)
         {
             return (
@@ -28,6 +36,12 @@ namespace WebAPIExercise.Data.UnitOfWork
             ).ToMaybe();
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderRepository.GetPage(int, int)"/>
+        /// </summary>
+        /// <param name="start">0-based index of the page</param>
+        /// <param name="size">size of the page</param>
+        /// <returns>A paged chunk of Orders</returns>
         public async Task<IEnumerable<Order>> GetPage(int start, int size)
         {
             return 
@@ -39,12 +53,22 @@ namespace WebAPIExercise.Data.UnitOfWork
                         .ToListAsync();
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderRepository.HasCompanyOrdersForToday(Order)"/>
+        /// </summary>
+        /// <param name="order">Order to check condition on</param>
+        /// <returns>True if an Order already exists; false otherwise</returns>
         public async Task<bool> HasCompanyOrdersForToday(Order order)
         {
             DateTime now = DateTime.Now;
             return await context.Orders.Where(o => o.CompanyCode == order.CompanyCode && o.Date.Date == now.Date).AnyAsync();
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderRepository.NewOrder(Order)"/>
+        /// </summary>
+        /// <param name="order">Product Entity to save</param>
+        /// <returns>The newly created entity with the new ID</returns>
         public async Task<Order> NewOrder(Order order)
         {
             Order newOrder = (await context.Orders.AddAsync(order)).Entity;

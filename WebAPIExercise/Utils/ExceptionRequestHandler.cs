@@ -8,14 +8,20 @@ using WebAPIExercise.Errors;
 
 namespace WebAPIExercise.Utils
 {
+    /// <summary>
+    /// Custom RequestDelegate used to transform exceptions into custom JSON for API response
+    /// </summary>
     public static class ExceptionRequestHandler
     {
-        private static readonly Dictionary<Type, int> table = new Dictionary<Type, int>
+        private static readonly Dictionary<Type, int> errorTypeToStatusCode = new Dictionary<Type, int>
         {
             [typeof(NotFoundException)] = 404,
             [typeof(InvalidEntityException)] = 400
         };
 
+        /// <summary>
+        /// Transforms exceptions into custom JSON for API response
+        /// </summary>
         public static RequestDelegate HandleExceptionInRequest = Handle;
 
         private static async Task Handle(HttpContext context)
@@ -23,7 +29,7 @@ namespace WebAPIExercise.Utils
             var exception = context.Features.Get<IExceptionHandlerFeature>().Error;
 
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = table.GetValueOrDefault(exception.GetType(), 500);
+            context.Response.StatusCode = errorTypeToStatusCode.GetValueOrDefault(exception.GetType(), 500);
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(new { message = exception.Message }));
         }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace WebAPIExercise.Output
 {
+    /// <summary>
+    /// Output POCO for Order.
+    /// </summary>
     public class Order
     {
         public int Id { get; set; }

@@ -1,5 +1,8 @@
 ﻿namespace WebAPIExercise.Output
 {
+    /// <summary>
+    /// Output POCO for OrderItem.
+    /// </summary>
     public class OrderItem
     {
         public int ProductId { get; set; }

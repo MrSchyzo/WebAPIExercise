@@ -3,6 +3,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WebAPIExercise.Input
 {
+    /// <summary>
+    /// Input POCO for Order.
+    /// </summary>
     public class Order
     {
         [Required]

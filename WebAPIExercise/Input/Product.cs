@@ -2,6 +2,9 @@
 
 namespace WebAPIExercise.Input
 {
+    /// <summary>
+    /// Input POCO for Product.
+    /// </summary>
     public class Product
     {
         [Required]

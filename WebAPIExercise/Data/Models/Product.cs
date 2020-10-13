@@ -2,6 +2,9 @@
 
 namespace WebAPIExercise.Data.Models
 {
+    /// <summary>
+    /// DB Entity for Product.
+    /// </summary>
     public class Product
     {
         public int Id { get; set; }

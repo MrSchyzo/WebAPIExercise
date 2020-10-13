@@ -3,6 +3,9 @@ using WebAPIExercise.Data.Models;
 
 namespace WebAPIExercise.Data
 {
+    /// <summary>
+    /// This DbContext contains Order, Product, and OrderItem DB Sets
+    /// </summary>
     public class ShopContext : DbContext
     {
         public DbSet<Order> Orders { get; set; }

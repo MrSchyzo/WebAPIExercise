@@ -17,6 +17,10 @@ using WebAPIExercise.Errors;
 
 namespace WebAPIExercise.Services
 {
+    /// <summary>
+    /// <inheritdoc cref="IOrderService"/>
+    /// <para>It uses a single DB UnitOfWork</para>
+    /// </summary>
     public class ShopOrderService : IOrderService
     {
         private readonly ShopUnitOfWork unit;
@@ -28,6 +32,13 @@ namespace WebAPIExercise.Services
             this.mapper = mapper;
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderService.GetAllPagedAsync(int, int)"/>
+        /// <para>It does not check argument validity.</para>
+        /// </summary>
+        /// <param name="pageStart">0-based index of the page</param>
+        /// <param name="pageSize">Size of the page</param>
+        /// <returns>All Orders in a chosen page</returns>
         public async Task<IEnumerable<Order>> GetAllPagedAsync(int pageStart, int pageSize)
         {
             IEnumerable<DbOrder> orders = await unit.ExecuteAsync(async (_, orders) => await orders.GetPage(pageStart, pageSize));
@@ -35,6 +46,12 @@ namespace WebAPIExercise.Services
             return orders.Select(mapper.Map<Order>);
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderService.GetByIdAsync(int)"/>
+        /// <para>It throws NotFoundException if the Order is not found</para>
+        /// </summary>
+        /// <param name="id">Order identifier</param>
+        /// <returns>An Order by id</returns>
         public async Task<Order> GetByIdAsync(int id)
         {
             Maybe<DbOrder> maybe = await unit.ExecuteAsync(async (_, order) => await order.GetById(id));
@@ -44,6 +61,19 @@ namespace WebAPIExercise.Services
                     .OrElseThrow(() => new NotFoundException($"Order {id} not found"));
         }
 
+        /// <summary>
+        /// <inheritdoc cref="IOrderService.NewAsync(InOrder)"/>
+        /// <para>InvalidEntityException is thrown if:</para>
+        /// <list type="bullet">
+        /// <item>Provided OrderItems are not unique by referenced ProductId</item>
+        /// <item>Provided OrderItems have inexistent ProductIds</item>
+        /// <item>There is an Order by the same company in the same day</item>
+        /// <item>The Product total is under 100.0</item>
+        /// <item>Some Product has a stock amount that is inferior to the ordered quantity</item>
+        /// </list>
+        /// </summary>
+        /// <param name="product">POCO representing the Order to save</param>
+        /// <returns>POCO representing the output Order</returns>
         public async Task<Order> NewAsync(InOrder order)
         {
             ImmutableHashSet<int> productIds = order.Items.Select(item => item.ProductId).ToImmutableHashSet();
